@@ -11,5 +11,5 @@
   "messageTemplate": "Hi {{name}} 👋😊\n\nRey Pelli ki thappakunda ravali\n\n🌐 {{websiteUrl}}\n\nGift tesukuni rara ukaaa\n\nSee you at the wedding! ❤️",
   "testMode": false,
   "dryRunMode": false,
-  "debugMode": false
+  "debugMode": true
 }

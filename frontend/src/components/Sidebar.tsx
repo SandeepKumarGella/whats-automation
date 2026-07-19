@@ -1,5 +1,4 @@
 import { useStore } from '../store/useStore';
-import { motion } from 'framer-motion';
 import { 
   LayoutDashboard,
   Rocket,
@@ -90,11 +89,7 @@ export function Sidebar() {
               }`}
             >
               {isSelected && (
-                <motion.div
-                  layoutId="sidebar-tab-indicator"
-                  className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-4 bg-emerald-500 rounded-r-md"
-                  transition={{ type: 'spring', stiffness: 350, damping: 25 }}
-                />
+                <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-4 bg-emerald-500 rounded-r-md transition-all duration-200" />
               )}
               
               <Icon size={14} className={isSelected ? 'text-emerald-450' : 'text-slate-450'} />

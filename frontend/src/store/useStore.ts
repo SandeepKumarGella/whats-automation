@@ -67,19 +67,17 @@ export const useStore = create<AppStore>((set) => ({
   toasts: [],
 
   addToast: (message, type = 'success') => {
-    // Dynamically trigger sonner toast for modern SaaS alert look
-    import('sonner').then(({ toast }) => {
-      if (type === 'success') toast.success(message);
-      else if (type === 'error') toast.error(message);
-      else if (type === 'warning') toast.warning(message);
-      else toast.info(message);
-    });
-
     const id = Date.now();
-    set((state) => ({ toasts: [...state.toasts, { id, message, type }] }));
+    set((state) => {
+      // Deduplicate exact duplicate toast messages within short timeframes
+      if (state.toasts.some((t) => t.message === message)) {
+        return state;
+      }
+      return { toasts: [...state.toasts, { id, message, type }] };
+    });
     setTimeout(() => {
       set((state) => ({ toasts: state.toasts.filter((t) => t.id !== id) }));
-    }, 4000);
+    }, 3500);
   },
 
   removeToast: (id) => set((state) => ({ toasts: state.toasts.filter((t) => t.id !== id) })),

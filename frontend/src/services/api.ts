@@ -10,6 +10,22 @@ const apiClient = axios.create({
   }
 });
 
+export const DEFAULT_FALLBACK_SETTINGS: AutomationSettings = {
+  websiteUrl: 'https://YOUR-WEDDING-LINK.com',
+  delayMin: 5,
+  delayMax: 10,
+  batchSize: 20,
+  batchDelayMin: 60,
+  batchDelayMax: 120,
+  retryCount: 3,
+  pauseDuration: 10,
+  theme: 'dark',
+  messageTemplate: 'Hi {{name}} 😊\n\nWe are delighted to invite you to our wedding.\n\nPlease visit our Wedding Invitation\n\n{{websiteUrl}}\n\nYour presence would mean a lot to us.\n\nThank you ❤️',
+  testMode: false,
+  dryRunMode: false,
+  debugMode: false
+};
+
 /**
  * Client-side CSV Parser Fallback
  * Ensures CSV validation works smoothly even if Vercel HTTPS mixed-content blocks http://localhost backend requests.
@@ -116,30 +132,51 @@ const parseCSVClientSide = async (file: File): Promise<CSVReport> => {
 export const api = {
   // Settings endpoints
   getSettings: async (): Promise<AutomationSettings> => {
-    const response = await apiClient.get<AutomationSettings>('/settings');
-    return response.data;
+    try {
+      const response = await apiClient.get<AutomationSettings>('/settings', { timeout: 3000 });
+      return response.data;
+    } catch (err) {
+      console.warn('Backend settings endpoint unreachable. Falling back to local default settings.', err);
+      const saved = localStorage.getItem('wa_local_settings');
+      return saved ? JSON.parse(saved) : DEFAULT_FALLBACK_SETTINGS;
+    }
   },
 
   saveSettings: async (settings: AutomationSettings): Promise<{ success: boolean; settings: AutomationSettings }> => {
-    const response = await apiClient.post<{ success: boolean; settings: AutomationSettings }>('/settings', settings);
-    return response.data;
+    localStorage.setItem('wa_local_settings', JSON.stringify(settings));
+    try {
+      const response = await apiClient.post<{ success: boolean; settings: AutomationSettings }>('/settings', settings, { timeout: 3000 });
+      return response.data;
+    } catch (err) {
+      console.warn('Backend settings endpoint unreachable. Saved to localStorage.', err);
+      return { success: true, settings };
+    }
   },
 
   backupSettingsUrl: () => `${API_BASE}/settings/backup`,
 
   restoreSettings: async (file: File): Promise<{ success: boolean; settings: AutomationSettings }> => {
-    const formData = new FormData();
-    formData.append('file', file);
-    const response = await axios.post<{ success: boolean; settings: AutomationSettings }>(
-      `${API_BASE}/settings/restore`,
-      formData,
-      {
-        headers: {
-          'Content-Type': 'multipart/form-data'
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const response = await axios.post<{ success: boolean; settings: AutomationSettings }>(
+        `${API_BASE}/settings/restore`,
+        formData,
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data'
+          },
+          timeout: 4000
         }
-      }
-    );
-    return response.data;
+      );
+      localStorage.setItem('wa_local_settings', JSON.stringify(response.data.settings));
+      return response.data;
+    } catch (err) {
+      const text = await file.text();
+      const settings = JSON.parse(text);
+      localStorage.setItem('wa_local_settings', JSON.stringify(settings));
+      return { success: true, settings };
+    }
   },
 
   // CSV endpoints
@@ -151,7 +188,7 @@ export const api = {
         headers: {
           'Content-Type': 'multipart/form-data'
         },
-        timeout: 5000
+        timeout: 4000
       });
       return response.data;
     } catch (err) {
@@ -162,60 +199,125 @@ export const api = {
 
   // Campaign History endpoints
   getCampaignHistoryIndex: async (): Promise<CampaignHistoryItem[]> => {
-    const response = await apiClient.get<CampaignHistoryItem[]>('/history');
-    return response.data;
+    try {
+      const response = await apiClient.get<CampaignHistoryItem[]>('/history', { timeout: 3000 });
+      return response.data;
+    } catch (err) {
+      console.warn('Backend history endpoint unreachable.', err);
+      const local = localStorage.getItem('wa_local_history');
+      return local ? JSON.parse(local) : [];
+    }
   },
 
   getCampaignContacts: async (campaignId: string): Promise<Contact[]> => {
-    const response = await apiClient.get<Contact[]>(`/history/${campaignId}`);
-    return response.data;
+    try {
+      const response = await apiClient.get<Contact[]>(`/history/${campaignId}`, { timeout: 3000 });
+      return response.data;
+    } catch (err) {
+      return [];
+    }
   },
 
   // Automation controls
   startAutomation: async (contacts: Contact[], settings: AutomationSettings): Promise<{ success: boolean; message: string }> => {
-    const response = await apiClient.post<{ success: boolean; message: string }>('/automation/start', { contacts, settings });
-    return response.data;
+    try {
+      const response = await apiClient.post<{ success: boolean; message: string }>('/automation/start', { contacts, settings }, { timeout: 5000 });
+      return response.data;
+    } catch (err: any) {
+      throw new Error('Backend engine disconnected. Please run the backend server locally on port 5000 or configure VITE_API_BASE.');
+    }
   },
 
   pauseAutomation: async (): Promise<{ success: boolean; message: string }> => {
-    const response = await apiClient.post<{ success: boolean; message: string }>('/automation/pause');
-    return response.data;
+    try {
+      const response = await apiClient.post<{ success: boolean; message: string }>('/automation/pause', {}, { timeout: 4000 });
+      return response.data;
+    } catch (err) {
+      return { success: false, message: 'Backend engine unreachable' };
+    }
   },
 
   resumeAutomation: async (): Promise<{ success: boolean; message: string }> => {
-    const response = await apiClient.post<{ success: boolean; message: string }>('/automation/resume');
-    return response.data;
+    try {
+      const response = await apiClient.post<{ success: boolean; message: string }>('/automation/resume', {}, { timeout: 4000 });
+      return response.data;
+    } catch (err) {
+      return { success: false, message: 'Backend engine unreachable' };
+    }
   },
 
   stopAutomation: async (): Promise<{ success: boolean; message: string }> => {
-    const response = await apiClient.post<{ success: boolean; message: string }>('/automation/stop');
-    return response.data;
+    try {
+      const response = await apiClient.post<{ success: boolean; message: string }>('/automation/stop', {}, { timeout: 4000 });
+      return response.data;
+    } catch (err) {
+      return { success: false, message: 'Backend engine unreachable' };
+    }
   },
 
   connectAutomation: async (settings?: AutomationSettings): Promise<{ success: boolean; message: string }> => {
-    const response = await apiClient.post<{ success: boolean; message: string }>('/automation/connect', { settings });
-    return response.data;
+    try {
+      const response = await apiClient.post<{ success: boolean; message: string }>('/automation/connect', { settings }, { timeout: 5000 });
+      return response.data;
+    } catch (err: any) {
+      throw new Error('Backend engine unreachable on http://localhost:5000. Please start your local backend server.');
+    }
   },
 
   getResumeState: async (): Promise<{ hasResumeState: boolean; state: any }> => {
-    const response = await apiClient.get<{ hasResumeState: boolean; state: any }>('/automation/resume-state');
-    return response.data;
+    try {
+      const response = await apiClient.get<{ hasResumeState: boolean; state: any }>('/automation/resume-state', { timeout: 3000 });
+      return response.data;
+    } catch (err) {
+      return { hasResumeState: false, state: null };
+    }
   },
 
   // Template Library Endpoints
   getSavedTemplates: async (): Promise<SavedTemplate[]> => {
-    const response = await apiClient.get<SavedTemplate[]>('/templates');
-    return response.data;
+    try {
+      const response = await apiClient.get<SavedTemplate[]>('/templates', { timeout: 3000 });
+      return response.data;
+    } catch (err) {
+      console.warn('Backend templates endpoint unreachable.', err);
+      const local = localStorage.getItem('wa_local_templates');
+      return local ? JSON.parse(local) : [
+        {
+          name: 'Wedding Invitation Default',
+          template: 'Hi {{name}} 😊\n\nWe are delighted to invite you to our wedding.\n\nPlease visit our Wedding Invitation\n\n{{websiteUrl}}\n\nYour presence would mean a lot to us.\n\nThank you ❤️'
+        }
+      ];
+    }
   },
 
   saveTemplate: async (name: string, template: string): Promise<{ success: boolean; name: string }> => {
-    const response = await apiClient.post<{ success: boolean; name: string }>('/templates', { name, template });
-    return response.data;
+    try {
+      const response = await apiClient.post<{ success: boolean; name: string }>('/templates', { name, template }, { timeout: 3000 });
+      return response.data;
+    } catch (err) {
+      const existing = localStorage.getItem('wa_local_templates');
+      const templates: SavedTemplate[] = existing ? JSON.parse(existing) : [];
+      const idx = templates.findIndex(t => t.name === name);
+      if (idx >= 0) templates[idx].template = template;
+      else templates.push({ name, template });
+      localStorage.setItem('wa_local_templates', JSON.stringify(templates));
+      return { success: true, name };
+    }
   },
 
   deleteTemplate: async (name: string): Promise<{ success: boolean; name: string }> => {
-    const response = await apiClient.delete<{ success: boolean; name: string }>(`/templates/${name}`);
-    return response.data;
+    try {
+      const response = await apiClient.delete<{ success: boolean; name: string }>(`/templates/${name}`, { timeout: 3000 });
+      return response.data;
+    } catch (err) {
+      const existing = localStorage.getItem('wa_local_templates');
+      if (existing) {
+        const templates: SavedTemplate[] = JSON.parse(existing);
+        const filtered = templates.filter(t => t.name !== name);
+        localStorage.setItem('wa_local_templates', JSON.stringify(filtered));
+      }
+      return { success: true, name };
+    }
   },
 
   // Report downloads helper url

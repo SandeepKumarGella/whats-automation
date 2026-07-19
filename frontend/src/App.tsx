@@ -47,6 +47,7 @@ export function App() {
   const [resumeState, setResumeState] = useState<any>(null);
   const [confirmStopOpen, setConfirmStopOpen] = useState(false);
   const prevStatusRef = useRef('idle');
+  const hasToastedConnectedRef = useRef(false);
 
   // Request notifications and query backend resume capabilities on mount
   useEffect(() => {
@@ -94,47 +95,61 @@ export function App() {
     }
   };
 
-  // Connect to SSE status stream
+  // Connect to SSE status stream safely
   useEffect(() => {
-    const sseUrl = 'http://localhost:5000/api/automation/status/stream';
-    const eventSource = new EventSource(sseUrl);
+    const apiBase = import.meta.env.VITE_API_BASE || 'http://localhost:5000/api';
+    const sseUrl = `${apiBase}/automation/status/stream`;
+    let eventSource: EventSource | null = null;
+    let errCount = 0;
 
-    eventSource.onmessage = (event) => {
-      try {
-        const payload = JSON.parse(event.data);
-        if (payload.type === 'status') {
-          setProgress(payload.data);
-          
-          const prevStatus = prevStatusRef.current;
-          const currentStatus = payload.data.status;
-          
-          if (currentStatus === 'completed' && prevStatus === 'running') {
-            playNotificationSound();
-            showDesktopNotification('Campaign Completed! 🎉', {
-              body: 'All WhatsApp messages in your queue have been processed.'
-            });
-            addToast('WhatsApp Campaign Finished successfully!', 'success');
-            setResumeState(null);
-            setWizardStep(8);
-            setActiveTab('campaigns');
-            queryClient.invalidateQueries({ queryKey: ['campaignHistory'] });
+    try {
+      eventSource = new EventSource(sseUrl);
+
+      eventSource.onmessage = (event) => {
+        errCount = 0;
+        try {
+          const payload = JSON.parse(event.data);
+          if (payload.type === 'status') {
+            setProgress(payload.data);
+            
+            const prevStatus = prevStatusRef.current;
+            const currentStatus = payload.data.status;
+            
+            if (currentStatus === 'completed' && prevStatus === 'running') {
+              playNotificationSound();
+              showDesktopNotification('Campaign Completed! 🎉', {
+                body: 'All WhatsApp messages in your queue have been processed.'
+              });
+              addToast('WhatsApp Campaign Finished successfully!', 'success');
+              setResumeState(null);
+              setWizardStep(8);
+              setActiveTab('campaigns');
+              queryClient.invalidateQueries({ queryKey: ['campaignHistory'] });
+            }
+
+            prevStatusRef.current = currentStatus;
+          } else if (payload.type === 'log') {
+            addLog(payload.data);
           }
-
-          prevStatusRef.current = currentStatus;
-        } else if (payload.type === 'log') {
-          addLog(payload.data);
+        } catch (err) {
+          console.error('Failed to parse SSE line: ', err);
         }
-      } catch (err) {
-        console.error('Failed to parse SSE line: ', err);
-      }
-    };
+      };
 
-    eventSource.onerror = (err) => {
-      console.error('SSE Connection failed. Retrying...', err);
-    };
+      eventSource.onerror = () => {
+        errCount++;
+        if (errCount >= 3 && eventSource) {
+          eventSource.close();
+        }
+      };
+    } catch (err) {
+      console.warn('SSE stream init skipped.', err);
+    }
 
     return () => {
-      eventSource.close();
+      if (eventSource) {
+        eventSource.close();
+      }
     };
   }, [setProgress, addLog, addToast, setWizardStep, setActiveTab, queryClient]);
 
@@ -148,6 +163,7 @@ export function App() {
   // Trigger WhatsApp connection when landing on Step 5
   useEffect(() => {
     if (activeTab === 'campaigns' && wizardStep === 5) {
+      hasToastedConnectedRef.current = false;
       api.connectAutomation().catch((err) => {
         console.error('Failed to initiate connection:', err);
       });
@@ -157,7 +173,10 @@ export function App() {
   // Automatically advance from Step 5 to Step 6 when WhatsApp is authenticated
   useEffect(() => {
     if (activeTab === 'campaigns' && wizardStep === 5 && progress.status === 'connected') {
-      addToast('WhatsApp authenticated successfully!', 'success');
+      if (!hasToastedConnectedRef.current) {
+        hasToastedConnectedRef.current = true;
+        addToast('WhatsApp authenticated successfully!', 'success');
+      }
       const timer = setTimeout(() => {
         setWizardStep(6);
       }, 1500);
@@ -536,19 +555,19 @@ export function App() {
                       </div>
 
                       {/* Right: QR Code Canvas box */}
-                      <div className="flex flex-col items-center justify-center">
+                      <div className="flex flex-col items-center justify-center gap-3">
                         {progress.status === 'connected' ? (
                           <div className="p-5 border border-emerald-500/30 bg-emerald-500/[0.05] rounded-xl flex flex-col items-center gap-2 max-w-[200px] text-center select-none">
                             <ShieldCheck size={32} className="text-emerald-500" />
                             <p className="text-xs font-bold text-slate-850 dark:text-slate-200">
-                              Linked Device
+                              Linked Device Active
                             </p>
                             <p className="text-[9px] text-slate-450 leading-relaxed mt-0.5">
-                              WhatsApp authenticated. Auto-advancing to next step...
+                              WhatsApp authenticated. Advancing to campaign review...
                             </p>
                           </div>
-                        ) : progress.status === 'scanning_qr' && progress.qrCodeUrl ? (
-                          <div className="p-3 bg-white border border-slate-200/80 dark:border-slate-850 rounded-xl shadow-inner relative group select-none pointer-events-none">
+                        ) : progress.qrCodeUrl ? (
+                          <div className="p-3 bg-white border border-slate-200/80 dark:border-slate-850 rounded-xl shadow-inner relative group select-none">
                             <img
                               src={progress.qrCodeUrl}
                               alt="WhatsApp Web QR Code"
@@ -556,24 +575,28 @@ export function App() {
                             />
                             <div className="absolute inset-0 border border-emerald-500/20 rounded-xl pointer-events-none animate-pulse" />
                           </div>
-                        ) : progress.status === 'connecting' || progress.status === 'scanning_qr' ? (
-                          <div className="py-8 flex flex-col items-center justify-center gap-3">
+                        ) : (
+                          <div className="py-6 flex flex-col items-center justify-center gap-3 text-center">
                             <div className="w-8 h-8 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin" />
                             <p className="text-[10px] text-slate-450 uppercase font-bold tracking-wider">
-                              {progress.status === 'connecting' ? 'Spawning Chromium Browser...' : 'Loading QR Code...'}
-                            </p>
-                          </div>
-                        ) : (
-                          <div className="p-5 border border-emerald-500/20 bg-emerald-500/[0.01] rounded-xl flex flex-col items-center gap-2 max-w-[200px] text-center select-none">
-                            <ShieldCheck size={28} className="text-emerald-500" />
-                            <p className="text-xs font-bold text-slate-850 dark:text-slate-200">
-                              Linked Device
-                            </p>
-                            <p className="text-[9px] text-slate-450 leading-relaxed mt-0.5">
-                              Persistent cookies cache verified. QR scan bypass active.
+                              {progress.currentStep || 'Spawning Playwright Chromium...'}
                             </p>
                           </div>
                         )}
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            api.connectAutomation().then(() => {
+                              addToast('Initiated WhatsApp browser connection', 'info');
+                            }).catch((err: any) => {
+                              addToast(err.message || 'Connection failed', 'error');
+                            });
+                          }}
+                          className="px-3 py-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-[10px] font-bold rounded-lg transition-colors flex items-center gap-1.5"
+                        >
+                          🔄 Re-trigger QR Code Scan / Launch Browser
+                        </button>
                       </div>
                     </div>
 

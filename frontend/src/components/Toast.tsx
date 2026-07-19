@@ -8,7 +8,7 @@ export function Toast() {
   if (toasts.length === 0) return null;
 
   return (
-    <div className="fixed top-6 right-6 z-50 flex flex-col gap-3 max-w-sm w-full">
+    <div className="fixed top-6 right-6 z-50 flex flex-col gap-3 max-w-sm w-full pointer-events-none select-none">
       {toasts.map((toast) => {
         const isSuccess = toast.type === 'success';
         const isError = toast.type === 'error';
@@ -16,7 +16,7 @@ export function Toast() {
         return (
           <div
             key={toast.id}
-            className={`flex items-start gap-3 p-4 rounded-xl shadow-lg border animate-slide-in transition-all duration-300 ${
+            className={`pointer-events-auto flex items-start gap-3 p-4 rounded-xl shadow-lg border animate-slide-in transition-all duration-300 ${
               isSuccess
                 ? 'bg-emerald-50 border-emerald-200 text-emerald-800 dark:bg-emerald-950/60 dark:border-emerald-800/40 dark:text-emerald-300'
                 : isError

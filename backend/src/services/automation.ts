@@ -565,20 +565,41 @@ const launchBrowserAndAuthenticate = async (settings: AutomationSettings): Promi
       }
       
       try {
-        const qrElement = page.locator('div[data-ref] canvas, div[data-testid="qrcode"] canvas, canvas[aria-label*="Scan"], canvas[aria-label*="QR"], canvas').first();
-        const screenshotBuffer = await qrElement.screenshot();
-        const qrBase64 = `data:image/png;base64,${screenshotBuffer.toString('base64')}`;
+        let qrElement = page.locator('div[data-ref] canvas, div[data-testid="qrcode"] canvas, canvas[aria-label*="Scan"], canvas[aria-label*="QR"], [data-testid="qrcode"] canvas, canvas').first();
+        let isQrVisible = await qrElement.isVisible().catch(() => false);
         
-        updateProgress({ 
-          status: 'scanning_qr',
-          qrCodeUrl: qrBase64, 
-          currentStep: 'Please scan the QR code using your WhatsApp App' 
-        });
+        if (!isQrVisible) {
+          qrElement = page.locator('div[data-ref], [data-testid="qrcode"]').first();
+          isQrVisible = await qrElement.isVisible().catch(() => false);
+        }
+
+        if (isQrVisible) {
+          const screenshotBuffer = await qrElement.screenshot();
+          const qrBase64 = `data:image/png;base64,${screenshotBuffer.toString('base64')}`;
+          
+          updateProgress({ 
+            status: 'scanning_qr',
+            qrCodeUrl: qrBase64, 
+            currentStep: 'Please scan the QR code using your WhatsApp App' 
+          });
+        } else {
+          updateProgress({
+            status: 'scanning_qr',
+            currentStep: 'QR code generated in Chromium browser. Please scan...'
+          });
+        }
       } catch (screenshotErr: any) {
         logger.debug(`QR screenshot failed: ${screenshotErr.message}`);
+        updateProgress({
+          status: 'scanning_qr',
+          currentStep: 'Waiting for QR Code screenshot...'
+        });
       }
     } else {
-      updateProgress({ currentStep: 'Waiting for WhatsApp Web UI to load...' });
+      updateProgress({ 
+        status: 'connecting',
+        currentStep: 'Waiting for WhatsApp Web UI to load in Chromium browser...' 
+      });
     }
 
     await sleep(2000);
