@@ -91,6 +91,91 @@ const detectDelimiter = (headerLine: string): string => {
   return ',';
 };
 
+export const normalizeCSVReport = (report: CSVReport): CSVReport => {
+  if (!report || !report.contacts) return report;
+
+  const seenPhones = new Set<string>();
+  const normalizedContacts: Contact[] = [];
+  const errors: CSVValidationError[] = [];
+
+  report.contacts.forEach((c, idx) => {
+    const rawName = c.name || '';
+    const rawPhone = c.phone || '';
+
+    const name = String(rawName).trim();
+    let cleanPhone = normalizePhoneNumber(rawPhone);
+
+    const rowErrors: string[] = [];
+
+    if (!name) {
+      rowErrors.push('Missing contact name');
+    }
+
+    if (!cleanPhone) {
+      rowErrors.push('Phone number is empty or contains invalid characters');
+    } else {
+      if (!cleanPhone.startsWith('+')) {
+        if (/^\d+$/.test(cleanPhone)) {
+          cleanPhone = '+' + cleanPhone;
+        } else {
+          rowErrors.push('Missing country code or leading "+"');
+        }
+      }
+
+      const digits = cleanPhone.slice(1);
+      if (!/^\d+$/.test(digits)) {
+        rowErrors.push('Phone number must contain only numeric digits after "+"');
+      } else if (digits.length < 10 || digits.length > 15) {
+        rowErrors.push('Phone number must be between 10 and 15 digits long');
+      }
+    }
+
+    if (rowErrors.length === 0) {
+      if (seenPhones.has(cleanPhone)) {
+        rowErrors.push('Duplicate phone number');
+      } else {
+        seenPhones.add(cleanPhone);
+      }
+    }
+
+    const status = rowErrors.length > 0 ? 'failed' : 'pending';
+
+    const normalizedContact: Contact = {
+      ...c,
+      name,
+      phone: cleanPhone || rawPhone,
+      status,
+      errorReason: rowErrors.length > 0 ? rowErrors.join(', ') : null
+    };
+
+    normalizedContacts.push(normalizedContact);
+
+    if (rowErrors.length > 0) {
+      errors.push({
+        row: idx + 2,
+        name: name || '[Empty Name]',
+        phone: rawPhone || '[Empty Phone]',
+        reasons: rowErrors
+      });
+    }
+  });
+
+  const totalRows = normalizedContacts.length;
+  const validCount = normalizedContacts.filter((c) => c.status === 'pending' || c.status === 'sent').length;
+  const invalidCount = totalRows - validCount;
+  const duplicateCount = errors.filter((e) => e.reasons.includes('Duplicate phone number')).length;
+
+  return {
+    isValid: invalidCount === 0,
+    totalRows,
+    validCount,
+    invalidCount,
+    duplicateCount,
+    contacts: normalizedContacts,
+    errors
+  };
+};
+
 /**
  * Client-side CSV Parser Fallback
  * Ensures CSV validation works smoothly even if Vercel HTTPS mixed-content blocks http://localhost backend requests.
@@ -123,9 +208,7 @@ const parseCSVClientSide = async (file: File): Promise<CSVReport> => {
     h.includes('wa')
   );
 
-  const contacts: Contact[] = [];
-  const errors: CSVValidationError[] = [];
-  const seenPhones = new Set<string>();
+  const rawContacts: Contact[] = [];
 
   for (let i = 1; i < lines.length; i++) {
     const cols = lines[i].split(delimiter).map((c) => c.trim().replace(/^["']|["']$/g, ''));
@@ -137,73 +220,28 @@ const parseCSVClientSide = async (file: File): Promise<CSVReport> => {
 
     if (!name && !phone) continue;
 
-    const rowErrors: string[] = [];
-    if (!name) rowErrors.push('Missing contact name');
-
-    let cleanPhone = normalizePhoneNumber(phone);
-
-    if (!cleanPhone.startsWith('+')) {
-      if (/^\d+$/.test(cleanPhone)) {
-        cleanPhone = '+' + cleanPhone;
-      } else {
-        rowErrors.push('Missing country code or leading "+"');
-      }
-    }
-
-    const digits = cleanPhone.slice(1);
-    if (!/^\d+$/.test(digits)) {
-      rowErrors.push('Phone number must contain only numeric digits after "+"');
-    } else if (digits.length < 10 || digits.length > 15) {
-      rowErrors.push('Phone number must be between 10 and 15 digits long');
-    }
-
-    if (rowErrors.length === 0) {
-      if (seenPhones.has(cleanPhone)) {
-        rowErrors.push('Duplicate phone number');
-      } else {
-        seenPhones.add(cleanPhone);
-      }
-    }
-
     const contactId = `contact_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    const status = rowErrors.length > 0 ? 'failed' : 'pending';
 
-    const contact: Contact = {
+    rawContacts.push({
       id: contactId,
       name,
-      phone: cleanPhone,
-      status,
-      errorReason: rowErrors.length > 0 ? rowErrors.join(', ') : null,
+      phone,
+      status: 'pending',
+      errorReason: null,
       retries: 0,
       duration: null
-    };
-
-    contacts.push(contact);
-
-    if (rowErrors.length > 0) {
-      errors.push({
-        row: i + 1,
-        name: name || '[Empty Name]',
-        phone: phone || '[Empty Phone]',
-        reasons: rowErrors
-      });
-    }
+    });
   }
 
-  const totalRows = contacts.length;
-  const validCount = contacts.filter((c) => c.status === 'pending').length;
-  const invalidCount = totalRows - validCount;
-  const duplicateCount = errors.filter((e) => e.reasons.includes('Duplicate phone number')).length;
-
-  return {
-    isValid: invalidCount === 0,
-    totalRows,
-    validCount,
-    invalidCount,
-    duplicateCount,
-    contacts,
-    errors
-  };
+  return normalizeCSVReport({
+    isValid: true,
+    totalRows: rawContacts.length,
+    validCount: rawContacts.length,
+    invalidCount: 0,
+    duplicateCount: 0,
+    contacts: rawContacts,
+    errors: []
+  });
 };
 
 export const api = {
@@ -258,6 +296,7 @@ export const api = {
 
   // CSV endpoints
   uploadCSV: async (file: File): Promise<CSVReport> => {
+    let report: CSVReport;
     try {
       const formData = new FormData();
       formData.append('file', file);
@@ -265,13 +304,14 @@ export const api = {
         headers: {
           'Content-Type': 'multipart/form-data'
         },
-        timeout: 4000
+        timeout: 2000
       });
-      return response.data;
+      report = response.data;
     } catch (err) {
       console.warn('Backend API upload unreachable or blocked. Parsing CSV client-side...', err);
-      return await parseCSVClientSide(file);
+      report = await parseCSVClientSide(file);
     }
+    return normalizeCSVReport(report);
   },
 
   // Campaign History endpoints
