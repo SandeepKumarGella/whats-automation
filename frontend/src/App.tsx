@@ -15,8 +15,8 @@ import TemplateEditor from './components/TemplateEditor';
 import SettingsForm from './components/SettingsForm';
 import QRModal from './components/QRModal';
 import ConfirmationDialog from './components/ConfirmationDialog';
-import { Toaster } from 'sonner';
-import { motion, AnimatePresence } from 'framer-motion';
+import Toast from './components/Toast';
+import { motion } from 'framer-motion';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSettings } from './hooks/useSettings';
 import { 
@@ -48,6 +48,7 @@ export function App() {
   const [confirmStopOpen, setConfirmStopOpen] = useState(false);
   const prevStatusRef = useRef('idle');
   const hasToastedConnectedRef = useRef(false);
+  const hasToastedCompletedRef = useRef(false);
 
   // Request notifications and query backend resume capabilities on mount
   useEffect(() => {
@@ -112,19 +113,24 @@ export function App() {
           if (payload.type === 'status') {
             setProgress(payload.data);
             
-            const prevStatus = prevStatusRef.current;
             const currentStatus = payload.data.status;
+            const isCompletedState = currentStatus === 'completed' || (payload.data.completed > 0 && payload.data.remaining === 0 && currentStatus === 'running');
             
-            if (currentStatus === 'completed' && prevStatus === 'running') {
-              playNotificationSound();
-              showDesktopNotification('Campaign Completed! 🎉', {
-                body: 'All WhatsApp messages in your queue have been processed.'
-              });
-              addToast('WhatsApp Campaign Finished successfully!', 'success');
-              setResumeState(null);
-              setWizardStep(8);
-              setActiveTab('campaigns');
-              queryClient.invalidateQueries({ queryKey: ['campaignHistory'] });
+            if (isCompletedState) {
+              if (!hasToastedCompletedRef.current) {
+                hasToastedCompletedRef.current = true;
+                playNotificationSound();
+                showDesktopNotification('Campaign Completed! 🎉', {
+                  body: 'All WhatsApp messages in your queue have been processed.'
+                });
+                addToast('WhatsApp Campaign Finished successfully!', 'success');
+                setResumeState(null);
+                setWizardStep(8);
+                setActiveTab('campaigns');
+                queryClient.invalidateQueries({ queryKey: ['campaignHistory'] });
+              }
+            } else {
+              hasToastedCompletedRef.current = false;
             }
 
             prevStatusRef.current = currentStatus;
@@ -431,18 +437,9 @@ export function App() {
             </motion.div>
           )}
 
-          {/* Stepper Slide Transitions based on active sidebar tab */}
-          <AnimatePresence mode="wait">
-            
-            {/* -------------------- GENERAL DASHBOARD VIEW -------------------- */}
-            {activeTab === 'dashboard' && (
-              <motion.div
-                key="dashboard-tab"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="space-y-6 max-w-4xl"
-              >
+          {/* -------------------- GENERAL DASHBOARD VIEW -------------------- */}
+          {activeTab === 'dashboard' && (
+            <div className="space-y-6 max-w-4xl">
                 <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 p-6 rounded-2xl shadow-sm space-y-4">
                   <h3 className="text-base font-bold text-slate-900 dark:text-white">
                     Campaign Launchpad
@@ -480,19 +477,12 @@ export function App() {
                     </h3>
                   </div>
                 </div>
-              </motion.div>
+              </div>
             )}
 
-            {/* -------------------- CAMPAIGNS WIZARD STEPPER VIEW -------------------- */}
-            {activeTab === 'campaigns' && (
-              <motion.div
-                key={`campaign-step-${wizardStep}`}
-                initial={{ opacity: 0, x: 8 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -8 }}
-                transition={{ duration: 0.15 }}
-                className="h-full"
-              >
+          {/* -------------------- CAMPAIGNS WIZARD STEPPER VIEW -------------------- */}
+          {activeTab === 'campaigns' && (
+            <div className="h-full">
                 {/* Step 1 & 2: Contacts CSV Upload & Queue Grid */}
                 {(wizardStep === 1 || wizardStep === 2) && <ContactsTable />}
 
@@ -845,108 +835,90 @@ export function App() {
 
                   </div>
                 )}
-              </motion.div>
-            )}
+            </div>
+          )}
 
-            {/* -------------------- TEMPLATE EDITOR TAB VIEW -------------------- */}
-            {activeTab === 'templates' && (
-              <motion.div
-                key="templates-tab"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-              >
-                <TemplateEditor />
-              </motion.div>
-            )}
+          {/* -------------------- TEMPLATE EDITOR TAB VIEW -------------------- */}
+          {activeTab === 'templates' && (
+            <div>
+              <TemplateEditor />
+            </div>
+          )}
 
-            {/* -------------------- SETTINGS FORM TAB VIEW -------------------- */}
-            {activeTab === 'settings' && (
-              <motion.div
-                key="settings-tab"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-              >
-                <SettingsForm />
-              </motion.div>
-            )}
+          {/* -------------------- SETTINGS FORM TAB VIEW -------------------- */}
+          {activeTab === 'settings' && (
+            <div>
+              <SettingsForm />
+            </div>
+          )}
 
-            {/* -------------------- RECENT CAMPAIGNS HISTORY TAB VIEW -------------------- */}
-            {activeTab === 'history' && (
-              <motion.div
-                key="history-tab"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="space-y-6 max-w-4xl"
-              >
-                <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 rounded-2xl shadow-sm overflow-hidden">
-                  <div className="p-5 border-b border-slate-100 dark:border-slate-800">
-                    <h3 className="text-base font-bold text-slate-900 dark:text-white">
-                      Recent Campaigns History Logs
-                    </h3>
-                  </div>
+          {/* -------------------- RECENT CAMPAIGNS HISTORY TAB VIEW -------------------- */}
+          {activeTab === 'history' && (
+            <div className="space-y-6 max-w-4xl">
+              <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 rounded-2xl shadow-sm overflow-hidden">
+                <div className="p-5 border-b border-slate-100 dark:border-slate-800">
+                  <h3 className="text-base font-bold text-slate-900 dark:text-white">
+                    Recent Campaigns History Logs
+                  </h3>
+                </div>
 
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-left border-collapse">
-                      <thead>
-                        <tr className="bg-slate-50/50 dark:bg-slate-900 text-slate-450 text-[10px] font-bold uppercase border-b border-slate-200/80 dark:border-slate-800/80 select-none">
-                          <th className="px-5 py-3">Date / Time</th>
-                          <th className="px-5 py-3">Total contacts</th>
-                          <th className="px-5 py-3">Delivered</th>
-                          <th className="px-5 py-3">Failed</th>
-                          <th className="px-5 py-3">Success Rate</th>
-                          <th className="px-5 py-3 text-right">Reports</th>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="bg-slate-50/50 dark:bg-slate-900 text-slate-450 text-[10px] font-bold uppercase border-b border-slate-200/80 dark:border-slate-800/80 select-none">
+                        <th className="px-5 py-3">Date / Time</th>
+                        <th className="px-5 py-3">Total contacts</th>
+                        <th className="px-5 py-3">Delivered</th>
+                        <th className="px-5 py-3">Failed</th>
+                        <th className="px-5 py-3">Success Rate</th>
+                        <th className="px-5 py-3 text-right">Reports</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 dark:divide-slate-850/60 text-xs font-semibold">
+                      {campaignHistory.length === 0 ? (
+                        <tr>
+                          <td colSpan={6} className="text-center py-12 text-xs text-slate-400 italic">
+                            No past campaigns recorded yet.
+                          </td>
                         </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-100 dark:divide-slate-850/60 text-xs font-semibold">
-                        {campaignHistory.length === 0 ? (
-                          <tr>
-                            <td colSpan={6} className="text-center py-12 text-xs text-slate-400 italic">
-                              No past campaigns recorded yet.
+                      ) : (
+                        campaignHistory.map((item, idx) => (
+                          <tr key={idx} className="hover:bg-slate-50/50 dark:hover:bg-slate-850/30">
+                            <td className="px-5 py-3.5 text-slate-850 dark:text-slate-200 flex items-center gap-2">
+                              <Calendar size={13} className="text-slate-400" />
+                              {new Date(item.timestamp).toLocaleString()}
+                            </td>
+                            <td className="px-5 py-3.5 font-mono text-slate-600 dark:text-slate-400">{item.total}</td>
+                            <td className="px-5 py-3.5 text-emerald-500 font-mono">{item.success}</td>
+                            <td className="px-5 py-3.5 text-rose-500 font-mono">{item.failed}</td>
+                            <td className="px-5 py-3.5 font-mono text-slate-850 dark:text-white">{item.total > 0 ? Math.round((item.success / item.total) * 100) : 0}%</td>
+                            <td className="px-5 py-3.5 text-right space-x-2">
+                              <a
+                                href={api.downloadReportUrl('sent')}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="text-[10px] text-emerald-500 hover:underline"
+                              >
+                                Delivered (CSV)
+                              </a>
+                              <a
+                                href={api.downloadReportUrl('failed')}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="text-[10px] text-rose-500 hover:underline font-semibold"
+                              >
+                                Failed (CSV)
+                              </a>
                             </td>
                           </tr>
-                        ) : (
-                          campaignHistory.map((item, idx) => (
-                            <tr key={idx} className="hover:bg-slate-50/50 dark:hover:bg-slate-850/30">
-                              <td className="px-5 py-3.5 text-slate-850 dark:text-slate-200 flex items-center gap-2">
-                                <Calendar size={13} className="text-slate-400" />
-                                {new Date(item.timestamp).toLocaleString()}
-                              </td>
-                              <td className="px-5 py-3.5 font-mono text-slate-600 dark:text-slate-400">{item.total}</td>
-                              <td className="px-5 py-3.5 text-emerald-500 font-mono">{item.success}</td>
-                              <td className="px-5 py-3.5 text-rose-500 font-mono">{item.failed}</td>
-                              <td className="px-5 py-3.5 font-mono text-slate-850 dark:text-white">{item.total > 0 ? Math.round((item.success / item.total) * 100) : 0}%</td>
-                              <td className="px-5 py-3.5 text-right space-x-2">
-                                <a
-                                  href={api.downloadReportUrl('sent')}
-                                  target="_blank"
-                                  rel="noreferrer"
-                                  className="text-[10px] text-emerald-500 hover:underline"
-                                >
-                                  Delivered (CSV)
-                                </a>
-                                <a
-                                  href={api.downloadReportUrl('failed')}
-                                  target="_blank"
-                                  rel="noreferrer"
-                                  className="text-[10px] text-rose-500 hover:underline font-semibold"
-                                >
-                                  Failed (CSV)
-                                </a>
-                              </td>
-                            </tr>
-                          ))
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
                 </div>
-              </motion.div>
-            )}
-
-          </AnimatePresence>
+              </div>
+            </div>
+          )}
 
         </div>
 
@@ -954,7 +926,7 @@ export function App() {
 
       {/* Modals & Dialogs */}
       <QRModal />
-      <Toaster position="bottom-right" richColors theme={theme === 'dark' ? 'dark' : 'light'} />
+      <Toast />
       
       <ConfirmationDialog
         isOpen={confirmStopOpen}

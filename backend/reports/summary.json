@@ -1,10 +1,10 @@
 {
-  "startTime": "2026-07-19T10:48:09.371Z",
-  "endTime": "2026-07-19T10:49:57.131Z",
+  "startTime": "2026-07-19T11:55:32.261Z",
+  "endTime": "2026-07-19T11:58:38.420Z",
   "totalContacts": 5,
-  "sentCount": 1,
+  "sentCount": 2,
   "failedCount": 0,
-  "skippedCount": 4,
+  "skippedCount": 3,
   "successRate": 100,
   "contactsDetails": [
     {
@@ -12,16 +12,16 @@
       "phone": "+919398415617",
       "status": "sent",
       "errorReason": null,
-      "retries": 1,
-      "duration": 97132
+      "retries": 0,
+      "duration": 86818
     },
     {
       "name": "Rajesh",
       "phone": "+916303596229",
-      "status": "skipped",
+      "status": "sent",
       "errorReason": null,
       "retries": 0,
-      "duration": null
+      "duration": 82174
     },
     {
       "name": "Rohit",
