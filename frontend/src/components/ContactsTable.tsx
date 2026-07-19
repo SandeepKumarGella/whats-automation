@@ -9,7 +9,8 @@ import {
   X, 
   CheckCircle2,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Download
 } from 'lucide-react';
 import { Contact } from '../types/index';
 
@@ -34,6 +35,19 @@ export function ContactsTable() {
 
   // Selected contacts multi-select list
   const [selectedContactIds, setSelectedContactIds] = useState<string[]>([]);
+
+  const downloadSampleCSV = () => {
+    const sampleData = `Name,Phone\nSandeep,+919398415617\nRajesh,+916303596229\nRohit,+919550387071\nPraveen,+919160706277\nSubbu,+916302455406`;
+    const blob = new Blob([sampleData], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', 'sample_whatsapp_contacts.csv');
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    addToast('Sample CSV downloaded! Open in Notepad or Excel text format.', 'info');
+  };
 
   // Drag and Drop Upload Handlers
   const handleDrag = (e: React.DragEvent) => {
@@ -232,15 +246,20 @@ export function ContactsTable() {
             </div>
 
             {/* Checklist details under upload zone */}
-            <div className="flex items-center gap-6 mt-8 text-xs text-slate-500 dark:text-slate-400 font-semibold border-t border-slate-100 dark:border-slate-800 pt-6 w-full max-w-xl justify-center">
-              <span className="flex items-center gap-1.5">
-                <CheckCircle2 size={14} className="text-emerald-500" />
-                CSV Format: Name
-              </span>
-              <span className="flex items-center gap-1.5">
-                <CheckCircle2 size={14} className="text-emerald-500" />
-                Phone (with country-code)
-              </span>
+            <div className="flex flex-wrap items-center gap-6 mt-8 text-xs text-slate-500 dark:text-slate-400 font-semibold border-t border-slate-100 dark:border-slate-800 pt-6 w-full max-w-xl justify-between">
+              <div className="flex items-center gap-4">
+                <span className="flex items-center gap-1.5">
+                  <CheckCircle2 size={14} className="text-emerald-500" />
+                  CSV Format: Name, Phone
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={downloadSampleCSV}
+                className="px-3 py-1 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-500 border border-emerald-500/20 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all active:scale-95"
+              >
+                <Download size={14} /> Download Sample CSV
+              </button>
             </div>
           </div>
 
