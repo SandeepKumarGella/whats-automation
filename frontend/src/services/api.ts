@@ -29,7 +29,8 @@ export const DEFAULT_FALLBACK_SETTINGS: AutomationSettings = {
 export const normalizePhoneNumber = (rawPhone: string): string => {
   if (!rawPhone) return '';
 
-  let phone = String(rawPhone).trim().replace(/^["']|["']$/g, '');
+  // Clean quotes and all whitespace (including internal spaces)
+  let phone = String(rawPhone).trim().replace(/^["']|["']$/g, '').replace(/\s+/g, '');
 
   // 1. Remove non-printable / zero-width characters (BOM \uFEFF, non-breaking space \u00A0, etc.)
   phone = phone.replace(/[\u200B-\u200D\uFEFF\u00A0\r\n\t]/g, '').trim();
@@ -54,8 +55,8 @@ export const normalizePhoneNumber = (rawPhone: string): string => {
     }
   }
 
-  // Case B: Scientific Notation stripped of E/dot (e.g. "919398+11")
-  const strippedSciMatch = phone.match(/^(\d+)\+(\d{1,2})$/);
+  // Case B: Scientific Notation stripped of E/dot (e.g. "919398+11", "+919398+11")
+  const strippedSciMatch = phone.match(/^[+]?(\d+)\+(\d{1,2})$/);
   if (strippedSciMatch) {
     const baseDigits = strippedSciMatch[1];
     const exponent = parseInt(strippedSciMatch[2], 10);
