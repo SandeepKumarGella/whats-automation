@@ -1,0 +1,4 @@
+{
+  "name": "Natural",
+  "template": "Hi {{name}} 👋😊\n\nNext month na marriage, kachitanga ravali\n\n🌐 {{websiteUrl}}"
+}

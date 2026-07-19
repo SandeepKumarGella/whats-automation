@@ -1,0 +1,29 @@
+[
+  {
+    "id": "contact_1784404110218_6gws2c5ct",
+    "name": "Sandeep",
+    "phone": "919398415617",
+    "status": "failed",
+    "errorReason": "Missing country code or leading \"+\"",
+    "retries": 0,
+    "duration": null
+  },
+  {
+    "id": "contact_1784404110218_pmb472jtq",
+    "name": "Rajesh",
+    "phone": "916303596229",
+    "status": "failed",
+    "errorReason": "Missing country code or leading \"+\"",
+    "retries": 0,
+    "duration": null
+  },
+  {
+    "id": "contact_1784404110231_jvp9z8nhb",
+    "name": "Rohit",
+    "phone": "919550387071",
+    "status": "failed",
+    "errorReason": "Missing country code or leading \"+\"",
+    "retries": 0,
+    "duration": null
+  }
+]

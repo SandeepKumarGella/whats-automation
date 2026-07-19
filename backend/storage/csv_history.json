@@ -1,0 +1,155 @@
+[
+  {
+    "id": "campaign_1784446242781",
+    "timestamp": "2026-07-19T07:30:42.781Z",
+    "filename": "contacts.csv",
+    "total": 5,
+    "success": 0,
+    "failed": 0,
+    "skipped": 0
+  },
+  {
+    "id": "campaign_1784445773783",
+    "timestamp": "2026-07-19T07:22:53.783Z",
+    "filename": "contacts.csv",
+    "total": 5,
+    "success": 0,
+    "failed": 0,
+    "skipped": 0
+  },
+  {
+    "id": "campaign_1784445350136",
+    "timestamp": "2026-07-19T07:15:50.136Z",
+    "filename": "contacts.csv",
+    "total": 5,
+    "success": 0,
+    "failed": 0,
+    "skipped": 0
+  },
+  {
+    "id": "campaign_1784444591265",
+    "timestamp": "2026-07-19T07:03:11.265Z",
+    "filename": "contacts.csv",
+    "total": 3,
+    "success": 0,
+    "failed": 0,
+    "skipped": 0
+  },
+  {
+    "id": "campaign_1784444311052",
+    "timestamp": "2026-07-19T06:58:31.052Z",
+    "filename": "contacts.csv",
+    "total": 3,
+    "success": 0,
+    "failed": 0,
+    "skipped": 0
+  },
+  {
+    "id": "campaign_1784443966839",
+    "timestamp": "2026-07-19T06:52:46.839Z",
+    "filename": "contacts.csv",
+    "total": 3,
+    "success": 0,
+    "failed": 0,
+    "skipped": 0
+  },
+  {
+    "id": "campaign_1784442510942",
+    "timestamp": "2026-07-19T06:28:30.942Z",
+    "filename": "contacts.csv",
+    "total": 3,
+    "success": 0,
+    "failed": 0,
+    "skipped": 0
+  },
+  {
+    "id": "campaign_1784441359248",
+    "timestamp": "2026-07-19T06:09:19.248Z",
+    "filename": "contacts.csv",
+    "total": 3,
+    "success": 0,
+    "failed": 0,
+    "skipped": 0
+  },
+  {
+    "id": "campaign_1784413660336",
+    "timestamp": "2026-07-18T22:27:40.336Z",
+    "filename": "contacts.csv",
+    "total": 3,
+    "success": 0,
+    "failed": 0,
+    "skipped": 0
+  },
+  {
+    "id": "campaign_1784413006817",
+    "timestamp": "2026-07-18T22:16:46.817Z",
+    "filename": "contacts.csv",
+    "total": 3,
+    "success": 0,
+    "failed": 0,
+    "skipped": 0
+  },
+  {
+    "id": "campaign_1784411701850",
+    "timestamp": "2026-07-18T21:55:01.850Z",
+    "filename": "contacts.csv",
+    "total": 3,
+    "success": 0,
+    "failed": 0,
+    "skipped": 0
+  },
+  {
+    "id": "campaign_1784408719000",
+    "timestamp": "2026-07-18T21:05:19.000Z",
+    "filename": "contacts.csv",
+    "total": 3,
+    "success": 0,
+    "failed": 0,
+    "skipped": 0
+  },
+  {
+    "id": "campaign_1784405002589",
+    "timestamp": "2026-07-18T20:03:22.589Z",
+    "filename": "contacts.csv",
+    "total": 3,
+    "success": 0,
+    "failed": 0,
+    "skipped": 0
+  },
+  {
+    "id": "campaign_1784404441579",
+    "timestamp": "2026-07-18T19:54:01.579Z",
+    "filename": "contacts.csv",
+    "total": 3,
+    "success": 0,
+    "failed": 0,
+    "skipped": 0
+  },
+  {
+    "id": "campaign_1784404110237",
+    "timestamp": "2026-07-18T19:48:30.237Z",
+    "filename": "contacts.csv",
+    "total": 3,
+    "success": 0,
+    "failed": 3,
+    "skipped": 0
+  },
+  {
+    "id": "campaign_1784404082734",
+    "timestamp": "2026-07-18T19:48:02.734Z",
+    "filename": "contacts.csv",
+    "total": 3,
+    "success": 0,
+    "failed": 3,
+    "skipped": 0
+  },
+  {
+    "id": "campaign_1784404004234",
+    "timestamp": "2026-07-18T19:46:44.234Z",
+    "filename": "contacts.csv",
+    "total": 3,
+    "success": 0,
+    "failed": 3,
+    "skipped": 0
+  }
+]

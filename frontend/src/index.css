@@ -1,0 +1,104 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --color-whatsapp-light: #25d366;
+  --color-whatsapp-default: #128c7e;
+  --color-whatsapp-dark: #075e54;
+  --color-whatsapp-teal: #00a884;
+  --color-whatsapp-bg-dark: #0b141a;
+
+  --color-emerald-450: #34d399;
+  --color-emerald-555: #10b981;
+  --color-slate-105: #f1f5f9;
+  --color-slate-250: #e2e8f0;
+  --color-slate-450: #94a3b8;
+  --color-slate-455: #94a3b8;
+  --color-slate-555: #64748b;
+  --color-slate-650: #475569;
+  --color-slate-750: #1e293b;
+  --color-slate-805: #1e293b;
+  --color-slate-850: #0f172a;
+}
+
+@layer base {
+  :root {
+    --bg-primary: #f3f4f6;
+    --bg-secondary: #ffffff;
+    --bg-accent: #0f766e; /* Teal */
+    --text-primary: #111827;
+    --text-secondary: #4b5563;
+    --border-color: #e5e7eb;
+    --sidebar-bg: #ffffff;
+    --card-bg: #ffffff;
+    --whatsapp-green: #128c7e;
+    --whatsapp-accent: #25d366;
+  }
+
+  :root.dark {
+    --bg-primary: #0b0f19;
+    --bg-secondary: #111827;
+    --bg-accent: #10b981;
+    --text-primary: #f3f4f6;
+    --text-secondary: #9ca3af;
+    --border-color: #1f2937;
+    --sidebar-bg: #111827;
+    --card-bg: #151c2c;
+    --whatsapp-green: #10b981;
+    --whatsapp-accent: #059669;
+  }
+
+  body {
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    transition: background-color 0.3s ease, color 0.3s ease;
+    overflow-x: hidden;
+  }
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-secondary);
+}
+
+/* Glassmorphism CSS helper */
+.glass-panel {
+  background: rgba(21, 28, 44, 0.4);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.light .glass-panel {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+/* Pulse animation for QR screen overlay */
+@keyframes pulseGlow {
+  0%, 100% {
+    box-shadow: 0 0 15px rgba(16, 185, 129, 0.2);
+  }
+  50% {
+    box-shadow: 0 0 25px rgba(16, 185, 129, 0.5);
+  }
+}
+
+.pulse-glow {
+  animation: pulseGlow 2s infinite ease-in-out;
+}

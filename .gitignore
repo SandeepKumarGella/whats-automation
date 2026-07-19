@@ -1,0 +1,30 @@
+# Node & dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Build outputs
+dist/
+build/
+*.tsbuildinfo
+
+# Environment & local session storage
+.env
+.env.local
+storage/whatsapp-session/
+storage/uploads/
+storage/campaigns/
+storage/resume_state.json
+
+# Diagnostics & Logs
+logs/
+screenshots/
+playwright-trace/
+*.log
+
+# IDE & OS
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/

@@ -1,0 +1,51 @@
+{
+  "startTime": "2026-07-19T07:32:10.498Z",
+  "endTime": "2026-07-19T07:34:47.749Z",
+  "totalContacts": 5,
+  "sentCount": 5,
+  "failedCount": 0,
+  "skippedCount": 0,
+  "successRate": 100,
+  "contactsDetails": [
+    {
+      "name": "Sandeep",
+      "phone": "+919398415617",
+      "status": "sent",
+      "errorReason": null,
+      "retries": 0,
+      "duration": 25331
+    },
+    {
+      "name": "Rajesh",
+      "phone": "+916303596229",
+      "status": "sent",
+      "errorReason": null,
+      "retries": 0,
+      "duration": 25841
+    },
+    {
+      "name": "Rohit",
+      "phone": "+919550387071",
+      "status": "sent",
+      "errorReason": null,
+      "retries": 0,
+      "duration": 25026
+    },
+    {
+      "name": "praveen",
+      "phone": "+919160706277",
+      "status": "sent",
+      "errorReason": null,
+      "retries": 0,
+      "duration": 25770
+    },
+    {
+      "name": "subbu",
+      "phone": "+916302455406",
+      "status": "sent",
+      "errorReason": null,
+      "retries": 0,
+      "duration": 24002
+    }
+  ]
+}

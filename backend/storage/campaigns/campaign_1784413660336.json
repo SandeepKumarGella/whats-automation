@@ -1,0 +1,29 @@
+[
+  {
+    "id": "contact_1784413660324_jzn6trs73",
+    "name": "Sandeep",
+    "phone": "+919398415617",
+    "status": "pending",
+    "errorReason": null,
+    "retries": 0,
+    "duration": null
+  },
+  {
+    "id": "contact_1784413660324_x8wkqqd7i",
+    "name": "Rajesh",
+    "phone": "+916303596229",
+    "status": "pending",
+    "errorReason": null,
+    "retries": 0,
+    "duration": null
+  },
+  {
+    "id": "contact_1784413660324_gu7vce058",
+    "name": "Rohit",
+    "phone": "+919550387071",
+    "status": "pending",
+    "errorReason": null,
+    "retries": 0,
+    "duration": null
+  }
+]

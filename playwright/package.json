@@ -1,0 +1,13 @@
+{
+  "name": "whatsapp-automation-playwright-tests",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.44.1",
+    "typescript": "^5.4.5"
+  }
+}

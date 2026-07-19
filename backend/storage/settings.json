@@ -1,0 +1,15 @@
+{
+  "websiteUrl": "https://siva-weds-suchitra.vercel.app/",
+  "delayMin": 5,
+  "delayMax": 10,
+  "batchSize": 20,
+  "batchDelayMin": 60,
+  "batchDelayMax": 120,
+  "retryCount": 3,
+  "pauseDuration": 10,
+  "theme": "dark",
+  "messageTemplate": "Hi {{name}} 👋😊\n\nI'm so happy to share that I'm getting married! 💍❤️\n\nIt would truly make my day if you could join us and bless us on this special occasion.\n\nHere's our wedding invitation:\n\n🌐 {{websiteUrl}}\n\nWe are eagerly looking forward to celebrating this beautiful moment with you and your family.\n\nSee you at the wedding! ❤️",
+  "testMode": false,
+  "dryRunMode": false,
+  "debugMode": false
+}
