@@ -4,16 +4,69 @@ import { logger } from '../utils/logger.js';
 import { Contact, CSVReport, CSVValidationError } from '../types/index.js';
 
 /**
+ * Normalizes a raw phone input string.
+ * Handles scientific notation from Excel (e.g. 9.19398E+11, 919398+11), spaces, quotes, BOM characters, etc.
+ */
+export const normalizePhoneNumber = (rawPhone: string): string => {
+  if (!rawPhone) return '';
+
+  let phone = rawPhone.trim().replace(/^["']|["']$/g, '');
+
+  // 1. Remove non-printable / zero-width characters (BOM \uFEFF, non-breaking spaces, control characters)
+  phone = phone.replace(/[\u200B-\u200D\uFEFF\u00A0\r\n\t]/g, '').trim();
+
+  // 2. Handle Scientific Notation formats from Excel:
+  // Case A: Standard Scientific Notation (e.g. "9.19398E+11", "9.19398e+11", "+9.19398E+11", "9.19398e11")
+  if (/^[+\-]?\d+(\.\d+)?[eE][+\-]?\d+$/.test(phone)) {
+    try {
+      const num = Number(phone);
+      if (!isNaN(num) && isFinite(num)) {
+        phone = BigInt(Math.round(num)).toString();
+      }
+    } catch {
+      // Ignore conversion error if BigInt throws
+    }
+  }
+
+  // Case B: Scientific Notation stripped of E/dot (e.g. "919398+11" or "919398+12")
+  const strippedSciMatch = phone.match(/^(\d+)\+(\d{1,2})$/);
+  if (strippedSciMatch) {
+    const baseDigits = strippedSciMatch[1];
+    const exponent = parseInt(strippedSciMatch[2], 10);
+
+    if (exponent >= baseDigits.length - 1) {
+      const reconstructedNum = Number(`${baseDigits[0]}.${baseDigits.slice(1)}E+${exponent}`);
+      if (!isNaN(reconstructedNum) && isFinite(reconstructedNum)) {
+        phone = BigInt(Math.round(reconstructedNum)).toString();
+      }
+    }
+  }
+
+  // 3. Keep leading '+' if present
+  const hasLeadingPlus = phone.startsWith('+');
+  let digits = phone.replace(/[^\d]/g, '');
+
+  if (hasLeadingPlus) {
+    return '+' + digits;
+  }
+
+  return digits;
+};
+
+/**
  * Validates a phone number.
  * Formats expected: starts with '+', followed by country code and subscriber number (total 10-15 digits after '+').
  * Examples: +919876543210, +12025550143
  */
-export const validatePhoneNumber = (phone: string): { isValid: boolean; reason?: string; cleanPhone?: string } => {
-  if (!phone) return { isValid: false, reason: 'Phone number is empty' };
+export const validatePhoneNumber = (rawPhone: string): { isValid: boolean; reason?: string; cleanPhone?: string } => {
+  if (!rawPhone) return { isValid: false, reason: 'Phone number is empty' };
   
-  // Strip all spaces, hyphens, brackets, and any non-numeric/non-plus character
-  let cleanPhone = phone.replace(/[^\d+]/g, '');
+  let cleanPhone = normalizePhoneNumber(rawPhone);
   
+  if (!cleanPhone) {
+    return { isValid: false, reason: 'Invalid characters or empty phone number' };
+  }
+
   // If the number doesn't start with '+', check if it's all digits and prepend '+'
   if (!cleanPhone.startsWith('+')) {
     if (/^\d+$/.test(cleanPhone)) {

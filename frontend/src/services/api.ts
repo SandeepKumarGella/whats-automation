@@ -26,6 +26,51 @@ export const DEFAULT_FALLBACK_SETTINGS: AutomationSettings = {
   debugMode: false
 };
 
+export const normalizePhoneNumber = (rawPhone: string): string => {
+  if (!rawPhone) return '';
+
+  let phone = rawPhone.trim().replace(/^["']|["']$/g, '');
+
+  // 1. Remove non-printable / zero-width characters
+  phone = phone.replace(/[\u200B-\u200D\uFEFF\u00A0\r\n\t]/g, '').trim();
+
+  // 2. Handle Scientific Notation formats from Excel:
+  if (/^[+\-]?\d+(\.\d+)?[eE][+\-]?\d+$/.test(phone)) {
+    try {
+      const num = Number(phone);
+      if (!isNaN(num) && isFinite(num)) {
+        phone = BigInt(Math.round(num)).toString();
+      }
+    } catch {
+      // Ignore
+    }
+  }
+
+  // Case B: Scientific Notation stripped of E/dot (e.g. "919398+11")
+  const strippedSciMatch = phone.match(/^(\d+)\+(\d{1,2})$/);
+  if (strippedSciMatch) {
+    const baseDigits = strippedSciMatch[1];
+    const exponent = parseInt(strippedSciMatch[2], 10);
+
+    if (exponent >= baseDigits.length - 1) {
+      const reconstructedNum = Number(`${baseDigits[0]}.${baseDigits.slice(1)}E+${exponent}`);
+      if (!isNaN(reconstructedNum) && isFinite(reconstructedNum)) {
+        phone = BigInt(Math.round(reconstructedNum)).toString();
+      }
+    }
+  }
+
+  // 3. Keep leading '+' if present
+  const hasLeadingPlus = phone.startsWith('+');
+  let digits = phone.replace(/[^\d]/g, '');
+
+  if (hasLeadingPlus) {
+    return '+' + digits;
+  }
+
+  return digits;
+};
+
 /**
  * Client-side CSV Parser Fallback
  * Ensures CSV validation works smoothly even if Vercel HTTPS mixed-content blocks http://localhost backend requests.
@@ -67,10 +112,14 @@ const parseCSVClientSide = async (file: File): Promise<CSVReport> => {
     const rowErrors: string[] = [];
     if (!name) rowErrors.push('Missing contact name');
 
-    let cleanPhone = phone.replace(/[^\d+]/g, '');
+    let cleanPhone = normalizePhoneNumber(phone);
+
     if (!cleanPhone.startsWith('+')) {
-      if (/^\d+$/.test(cleanPhone)) cleanPhone = '+' + cleanPhone;
-      else rowErrors.push('Missing country code or leading "+"');
+      if (/^\d+$/.test(cleanPhone)) {
+        cleanPhone = '+' + cleanPhone;
+      } else {
+        rowErrors.push('Missing country code or leading "+"');
+      }
     }
 
     const digits = cleanPhone.slice(1);
