@@ -1,6 +1,0 @@
-2026/07/19-02:32:06.269 5468 Creating DB C:\Users\sande\.gemini\antigravity-ide\scratch\whatsapp-automation\backend\storage\whatsapp-session\Default\WebStorage\2\IndexedDB\indexeddb.leveldb since it was missing.
-2026/07/19-02:32:06.316 5468 Reusing MANIFEST C:\Users\sande\.gemini\antigravity-ide\scratch\whatsapp-automation\backend\storage\whatsapp-session\Default\WebStorage\2\IndexedDB\indexeddb.leveldb/MANIFEST-000001
-2026/07/19-02:32:10.926 43cc Level-0 table #5: started
-2026/07/19-02:32:10.947 43cc Level-0 table #5: 853 bytes OK
-2026/07/19-02:32:10.948 43cc Delete type=0 #3
-2026/07/19-02:32:10.949 43cc Manual compaction at level-0 from (begin) .. (end); will stop at (end)

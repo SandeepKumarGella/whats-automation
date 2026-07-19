@@ -9,13 +9,11 @@ dist/
 build/
 *.tsbuildinfo
 
-# Environment & local session storage
-.env
-.env.local
-storage/whatsapp-session/
-storage/uploads/
-storage/campaigns/
-storage/resume_state.json
+# Session & persistent storage
+**/storage/whatsapp-session/
+**/storage/uploads/
+**/storage/campaigns/
+**/storage/resume_state.json
 
 # Diagnostics & Logs
 logs/
