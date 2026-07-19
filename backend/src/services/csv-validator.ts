@@ -5,17 +5,26 @@ import { Contact, CSVReport, CSVValidationError } from '../types/index.js';
 
 /**
  * Normalizes a raw phone input string.
- * Handles scientific notation from Excel (e.g. 9.19398E+11, 919398+11), spaces, quotes, BOM characters, etc.
+ * Handles scientific notation from Excel (e.g. 9.19398E+11, 919398+11, 9,19398E+11), spaces, quotes, BOM characters, etc.
  */
 export const normalizePhoneNumber = (rawPhone: string): string => {
   if (!rawPhone) return '';
 
-  let phone = rawPhone.trim().replace(/^["']|["']$/g, '');
+  // Clean quotes and whitespace
+  let phone = String(rawPhone).trim().replace(/^["']|["']$/g, '');
 
-  // 1. Remove non-printable / zero-width characters (BOM \uFEFF, non-breaking spaces, control characters)
+  // 1. Remove non-printable / zero-width characters (BOM \uFEFF, non-breaking space \u00A0, control characters)
   phone = phone.replace(/[\u200B-\u200D\uFEFF\u00A0\r\n\t]/g, '').trim();
 
-  // 2. Handle Scientific Notation formats from Excel:
+  // 2. Remove trailing .0 from float exports (e.g. "919398765432.0" -> "919398765432")
+  phone = phone.replace(/\.0+$/, '');
+
+  // 3. Convert European comma decimal to dot if in scientific notation (e.g. "9,19398E+11" -> "9.19398E+11")
+  if (/^[+\-]?\d+,\d+[eE][+\-]?\d+$/.test(phone)) {
+    phone = phone.replace(',', '.');
+  }
+
+  // 4. Handle Scientific Notation formats from Excel:
   // Case A: Standard Scientific Notation (e.g. "9.19398E+11", "9.19398e+11", "+9.19398E+11", "9.19398e11")
   if (/^[+\-]?\d+(\.\d+)?[eE][+\-]?\d+$/.test(phone)) {
     try {
@@ -42,12 +51,17 @@ export const normalizePhoneNumber = (rawPhone: string): string => {
     }
   }
 
-  // 3. Keep leading '+' if present
+  // 5. Keep leading '+' if present
   const hasLeadingPlus = phone.startsWith('+');
   let digits = phone.replace(/[^\d]/g, '');
 
   if (hasLeadingPlus) {
     return '+' + digits;
+  }
+
+  // Auto-prefix +91 for 10-digit Indian numbers starting with 6-9 if country code omitted
+  if (digits.length === 10 && /^[6-9]/.test(digits)) {
+    return '+91' + digits;
   }
 
   return digits;
@@ -108,11 +122,22 @@ export const parseAndValidateCSV = (filePath: string): Promise<CSVReport> => {
       }))
       .on('data', (row: any) => {
         rowNumber++;
-        const rawName = row.name || '';
-        const rawPhone = row.phone || '';
+        const keys = Object.keys(row);
+        const nameKey = keys.find(k => k.includes('name') || k.includes('contact')) || keys[0] || '';
+        const phoneKey = keys.find(k => 
+          k.includes('phone') || 
+          k.includes('number') || 
+          k.includes('mobile') || 
+          k.includes('tel') || 
+          k.includes('ph') || 
+          k.includes('wa')
+        ) || keys[1] || keys[keys.length - 1] || '';
+
+        const rawName = row[nameKey] || '';
+        const rawPhone = row[phoneKey] || '';
         
-        const name = rawName.trim();
-        const phone = rawPhone.trim();
+        const name = String(rawName).trim();
+        const phone = String(rawPhone).trim();
         
         // Skip completely empty rows
         if (!name && !phone) {

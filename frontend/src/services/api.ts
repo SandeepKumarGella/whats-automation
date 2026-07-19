@@ -29,12 +29,20 @@ export const DEFAULT_FALLBACK_SETTINGS: AutomationSettings = {
 export const normalizePhoneNumber = (rawPhone: string): string => {
   if (!rawPhone) return '';
 
-  let phone = rawPhone.trim().replace(/^["']|["']$/g, '');
+  let phone = String(rawPhone).trim().replace(/^["']|["']$/g, '');
 
-  // 1. Remove non-printable / zero-width characters
+  // 1. Remove non-printable / zero-width characters (BOM \uFEFF, non-breaking space \u00A0, etc.)
   phone = phone.replace(/[\u200B-\u200D\uFEFF\u00A0\r\n\t]/g, '').trim();
 
-  // 2. Handle Scientific Notation formats from Excel:
+  // 2. Remove trailing .0 from float exports (e.g. "919398765432.0" -> "919398765432")
+  phone = phone.replace(/\.0+$/, '');
+
+  // 3. Convert European comma decimal to dot if in scientific notation (e.g. "9,19398E+11" -> "9.19398E+11")
+  if (/^[+\-]?\d+,\d+[eE][+\-]?\d+$/.test(phone)) {
+    phone = phone.replace(',', '.');
+  }
+
+  // 4. Handle Scientific Notation formats from Excel:
   if (/^[+\-]?\d+(\.\d+)?[eE][+\-]?\d+$/.test(phone)) {
     try {
       const num = Number(phone);
@@ -60,7 +68,7 @@ export const normalizePhoneNumber = (rawPhone: string): string => {
     }
   }
 
-  // 3. Keep leading '+' if present
+  // 5. Keep leading '+' if present
   const hasLeadingPlus = phone.startsWith('+');
   let digits = phone.replace(/[^\d]/g, '');
 
@@ -68,7 +76,19 @@ export const normalizePhoneNumber = (rawPhone: string): string => {
     return '+' + digits;
   }
 
+  // Auto-prefix +91 for 10-digit Indian numbers starting with 6-9 if country code omitted
+  if (digits.length === 10 && /^[6-9]/.test(digits)) {
+    return '+91' + digits;
+  }
+
   return digits;
+};
+
+const detectDelimiter = (headerLine: string): string => {
+  if (headerLine.includes('\t')) return '\t';
+  if (headerLine.includes(';')) return ';';
+  if (headerLine.includes('|')) return '|';
+  return ',';
 };
 
 /**
@@ -91,21 +111,29 @@ const parseCSVClientSide = async (file: File): Promise<CSVReport> => {
     };
   }
 
-  const headers = lines[0].split(',').map((h) => h.trim().toLowerCase().replace(/^["']|["']$/g, ''));
-  const nameIdx = headers.findIndex((h) => h.includes('name'));
-  const phoneIdx = headers.findIndex((h) => h.includes('phone') || h.includes('number') || h.includes('mobile'));
+  const delimiter = detectDelimiter(lines[0]);
+  const headers = lines[0].split(delimiter).map((h) => h.trim().toLowerCase().replace(/^["']|["']$/g, ''));
+  const nameIdx = headers.findIndex((h) => h.includes('name') || h.includes('contact'));
+  const phoneIdx = headers.findIndex((h) => 
+    h.includes('phone') || 
+    h.includes('number') || 
+    h.includes('mobile') || 
+    h.includes('tel') || 
+    h.includes('ph') || 
+    h.includes('wa')
+  );
 
   const contacts: Contact[] = [];
   const errors: CSVValidationError[] = [];
   const seenPhones = new Set<string>();
 
   for (let i = 1; i < lines.length; i++) {
-    const cols = lines[i].split(',').map((c) => c.trim().replace(/^["']|["']$/g, ''));
+    const cols = lines[i].split(delimiter).map((c) => c.trim().replace(/^["']|["']$/g, ''));
     const rawName = nameIdx >= 0 ? cols[nameIdx] || '' : cols[0] || '';
-    const rawPhone = phoneIdx >= 0 ? cols[phoneIdx] || '' : cols[1] || '';
+    const rawPhone = phoneIdx >= 0 ? cols[phoneIdx] || '' : cols[1] || cols[cols.length - 1] || '';
 
-    const name = rawName.trim();
-    const phone = rawPhone.trim();
+    const name = String(rawName).trim();
+    const phone = String(rawPhone).trim();
 
     if (!name && !phone) continue;
 
