@@ -6,9 +6,9 @@ import router from './routes/index.js';
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Enable CORS for Vite frontend
+// Enable CORS for Vite frontend (Local and Vercel production)
 app.use(cors({
-  origin: ['http://localhost:5173', 'http://127.0.0.1:5173'],
+  origin: true,
   credentials: true
 }));
 

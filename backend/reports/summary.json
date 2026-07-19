@@ -1,6 +1,6 @@
 {
-  "startTime": "2026-07-19T07:32:10.498Z",
-  "endTime": "2026-07-19T07:34:47.749Z",
+  "startTime": "2026-07-19T08:30:01.547Z",
+  "endTime": "2026-07-19T08:32:08.640Z",
   "totalContacts": 5,
   "sentCount": 5,
   "failedCount": 0,
@@ -13,7 +13,7 @@
       "status": "sent",
       "errorReason": null,
       "retries": 0,
-      "duration": 25331
+      "duration": 17560
     },
     {
       "name": "Rajesh",
@@ -21,7 +21,7 @@
       "status": "sent",
       "errorReason": null,
       "retries": 0,
-      "duration": 25841
+      "duration": 17123
     },
     {
       "name": "Rohit",
@@ -29,7 +29,7 @@
       "status": "sent",
       "errorReason": null,
       "retries": 0,
-      "duration": 25026
+      "duration": 19877
     },
     {
       "name": "praveen",
@@ -37,7 +37,7 @@
       "status": "sent",
       "errorReason": null,
       "retries": 0,
-      "duration": 25770
+      "duration": 19269
     },
     {
       "name": "subbu",
@@ -45,7 +45,7 @@
       "status": "sent",
       "errorReason": null,
       "retries": 0,
-      "duration": 24002
+      "duration": 16934
     }
   ]
 }
